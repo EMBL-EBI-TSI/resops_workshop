@@ -39,7 +39,11 @@ resource "openstack_compute_instance_v2" "basic" {
   key_pair        = "${openstack_compute_keypair_v2.demo_keypair.name}"
   security_groups = ["${openstack_compute_secgroup_v2.demo_secgroup.name}"]
 
+#  network {
+#    name = "${openstack_networking_network_v2.demo_network.name}"
+#  }
+
   network {
-    name = "${openstack_networking_network_v2.demo_network.name}"
+    name = "base_vms_network"
   }
 }
