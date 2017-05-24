@@ -2,6 +2,6 @@ variable "name" {
   type = "string"
 }
 
-variable "keypair" {
+variable "pubkey" {
   type = "string"
 }

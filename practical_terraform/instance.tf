@@ -1,3 +1,9 @@
+# Create a keypair
+resource "openstack_compute_keypair_v2" "demo_keypair" {
+  name = "${var.name}_keypair"
+  public_key = "${file("${var.pubkey}")}"
+}
+
 # Create a network
 resource "openstack_networking_network_v2" "demo_network" {
   name = "${var.name}_network"
@@ -17,7 +23,7 @@ resource "openstack_compute_instance_v2" "basic" {
   name            = "${var.name}_machine"
   image_id        = "7b5fea5e-7a75-46de-a1c4-5e7fae18eb85"
   flavor_name     = "s1.tiny"
-  key_pair        = "${var.keypair}"
+  key_pair        = "${openstack_compute_keypair_v2.demo_keypair.name}"
   security_groups = ["base_vms_basic_sec"]
 
   network {
