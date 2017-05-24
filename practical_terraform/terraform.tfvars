@@ -1,2 +1,2 @@
-name = "erik"
-keypair = "erik_ext05"
+name = "example"
+keypair = "example_pair"
