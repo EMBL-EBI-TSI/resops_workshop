@@ -1,0 +1,7 @@
+---
+# Ganglia configuration
+ganglia_data_interval: 60
+ganglia_grid_name: EMBL-EBI
+ganglia_cluster_name: OpenLava
+ganglia_user: mmg_user
+ganglia_password: resops_training

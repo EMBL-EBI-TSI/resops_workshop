@@ -1,0 +1,10 @@
+---
+# handlers file for ganglia-server
+- name: restart gmond
+  service: name=gmond state=restarted
+
+- name: restart gmetad
+  service: name=gmetad state=restarted
+
+- name: restart httpd
+  service: name=httpd state=restarted

@@ -1,0 +1,15 @@
+---
+- name: Install NFS packages
+  action: yum pkg="{{ item }}" state=present
+  with_items:
+    - nfs-utils
+    - nfs4-acl-tools
+
+- name: Open NFS port
+  firewalld: port=2049/tcp zone=internal permanent=true immediate=true state=enabled
+
+- name: Ensure needed services are running
+  action: service name="{{ item }}" state=started enabled=yes
+  with_items:
+    - rpcbind
+    - nfs-server

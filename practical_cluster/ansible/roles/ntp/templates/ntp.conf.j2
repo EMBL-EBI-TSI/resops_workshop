@@ -1,0 +1,18 @@
+## NTP configuration
+## Please note: ANSIBLE MANAGED!
+
+# Force NTP to keep going even if a big time gap is detected
+tinker panic 0
+
+# Set driftfile path
+driftfile {{ ntp_config_driftfile }}
+
+# Set restrict access
+{% for restrict in ntp_config_restrict %}
+restrict {{ restrict }}
+{% endfor %}
+
+# Set NTP servers
+{% for server in ntp_config_servers %}
+server {{ server }}
+{% endfor %}

@@ -1,0 +1,15 @@
+---
+# tasks file for ganglia-client
+- name: Install Ganglia client packages
+  yum: name={{ item }} state=present
+  with_items:
+    - ganglia
+    - ganglia-gmond
+
+- name: Template Ganglia gmond.conf
+  template: src=etc/ganglia/gmond.conf.j2 dest=/etc/ganglia/gmond.conf
+  notify: restart gmond
+  tags: ['live']
+  
+- name: Start Ganglia monitor daemon and enable it at boot time
+  service: name=gmond state=started enabled=yes

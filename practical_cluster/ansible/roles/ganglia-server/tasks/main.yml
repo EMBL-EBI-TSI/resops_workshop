@@ -1,0 +1,69 @@
+---
+# tasks file for ganglia-server
+- name: Update selinux-policy to latest version
+  yum: name=selinux-policy state=latest
+
+- name: Install Ganglia components
+  yum: name={{ item }} state=present
+  with_items:
+    - ganglia
+    - ganglia-gmetad
+    - ganglia-web
+    - ganglia-gmond
+
+- name: Template Ganglia gmetad.conf file
+  template: src=etc/ganglia/gmetad.conf.j2 dest=/etc/ganglia/gmetad.conf
+  notify: restart gmetad
+  tags: ['live']
+
+- name: Template Ganglia gmond.conf
+  template: src=etc/ganglia/gmond.conf.j2 dest=/etc/ganglia/gmond.conf
+  notify: restart gmond
+  tags: ['live']
+
+- name: Copy Ganglia httpd conf
+  copy: src=ganglia.conf dest=/etc/httpd/conf.d/ganglia.conf
+  notify: restart httpd
+
+- name: Install passlib python library
+  yum: name=python-passlib state=present
+
+- name: Create .htpasswd
+  htpasswd: path=/etc/httpd/conf.d/ganglia_htpasswd name={{ ganglia_user }} password={{ ganglia_password }} state=present
+  notify: restart httpd
+  tags: ['live']
+
+- name: Change ownership of Ganglia web-app to Apache user
+  file: path=/usr/share/ganglia state=directory owner=apache group=apache
+  notify: restart httpd
+
+- name: Remove undeeded Apache default confs
+  file: path=/etc/httpd/conf.d/{{ item }} state=absent
+  with_items:
+    - welcome.conf
+    - userdir.conf
+    - autoindex.conf
+  notify: restart httpd
+
+- name: Make selinux happy with Ganglia web-app connecting to network
+  command: setsebool -P {{ item }} 1
+  with_items:
+    - nis_enabled
+    - httpd_can_network_connect
+  changed_when: false
+
+- name: Start Ganglia services & Apache and enable them at boot time
+  service: name={{ item }} state=started enabled=yes
+  with_items:
+    - gmond
+    - gmetad
+    - httpd
+
+- name: Open http port on the public network for ganglia-web
+  firewalld: service=http zone=public permanent=true immediate=true state=enabled
+
+- name: Open ganglia ports on the internal network
+  firewalld: port={{ item }} zone=internal permanent=true immediate=true state=enabled
+  with_items:
+    - 8649/tcp
+    - 8649/udp

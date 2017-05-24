@@ -1,0 +1,11 @@
+---
+# defaults file for ntp
+
+ntp_config_servers: ['0.europe.pool.ntp.org', '1.europe.pool.ntp.org', '2.europe.pool.ntp.org', '3.europe.pool.ntp.org']
+ntp_config_restrict:
+  - 'default kod nomodify notrap nopeer noquery'
+  - '-6 default kod nomodify notrap nopeer noquery'
+  - '127.0.0.1'
+  - '::1'
+ntp_config_driftfile: '/var/lib/ntp/drift'
+open_firewall_port: false

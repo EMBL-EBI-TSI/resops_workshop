@@ -1,0 +1,27 @@
+---
+# tasks file for unattended-upgrades
+- name: Install yum-cron
+  yum: name=yum-cron state=present
+
+- name: Configure kind of updates to carry out
+  action: lineinfile dest=/etc/yum/yum-cron.conf regexp="^update_cmd" line="update_cmd = {{ type_updates }}" state=present
+  notify:
+    - restart yum-cron
+
+- name: Configure updates automatic download
+  action: lineinfile dest=/etc/yum/yum-cron.conf regexp="^download_updates" line="download_updates = {{ download_updates }}" state=present
+  notify:
+    - restart yum-cron
+
+- name: Configure updates automatic apply
+  action: lineinfile dest=/etc/yum/yum-cron.conf regexp="^apply_updates" line="apply_updates = {{ apply_updates }}" state=present
+  notify:
+    - restart yum-cron
+
+- name: Configure updates alert
+  action: lineinfile dest=/etc/yum/yum-cron.conf regexp="^update_messages" line="update_messages = {{ update_messages }}" state=present
+  notify:
+    - restart yum-cron
+
+- name: Ensure yum-cron is running and enabled
+  service: name=yum-cron state=started enabled=yes

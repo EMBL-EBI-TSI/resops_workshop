@@ -1,0 +1,34 @@
+#
+# openlava main configuration file lsf.conf
+# This file is designed as Bourne Shell rc file
+# and it is sourced by all openlava components.
+#
+LSF_SERVERDIR="/opt/{{ openlava_version }}/sbin"
+LSF_BINDIR="/opt/{{ openlava_version }}/bin"
+LSB_SHAREDIR="/opt/{{ openlava_version }}/work"
+LSF_ENVDIR="/opt/{{ openlava_version }}/etc"
+LSF_LIBDIR="/opt/{{ openlava_version }}/lib"
+
+# Configuration directories
+LSF_CONFDIR="/opt/{{ openlava_version }}/etc"
+LSB_CONFDIR="/opt/{{ openlava_version }}/etc"
+
+# Daemon log messages
+LSF_LOGDIR="/opt/{{ openlava_version }}/log"
+LSF_LOG_MASK=LOG_WARNING
+
+# Daemons listening ports must not
+# be in use by other programs.
+LSF_LIM_PORT=6322
+LSF_RES_PORT=6323
+LSB_MBD_PORT=6324
+LSB_SBD_PORT=6325
+#
+# Use eauth authentication.
+LSF_AUTH=eauth
+
+# Batch mail message handling
+LSB_MAILTO=!U
+
+LSF_SERVER_HOSTS="{{ hostvars[groups["openlava_master"][0]].ansible_hostname }}"
+LSF_MASTER_LIST="{{ hostvars[groups["openlava_master"][0]].ansible_hostname }} {{nodes_hostnames[0]|default("")}}"

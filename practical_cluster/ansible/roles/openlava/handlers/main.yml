@@ -1,0 +1,38 @@
+---
+# handlers file for openlava
+
+- name: reload openlava
+  command: cat /dev/null
+  run_once: true
+  delegate_to: '{{groups["openlava_master"][0]}}'
+  notify:
+    - lsadmin reconfig
+    - spacer
+    - badmin mbdrestart
+
+  # When scaling down, the following command will fail due to missing hostnames,
+  # since destroyed nodes would have been removed by etc.hosts already. It is
+  # safe ignore the failure, as badmin will take care of doing the work anyway.
+  # It may however not to be wise to also change LSF parameters at the same time,
+  # as a successfull run of lsadmin is needed to pick them up.
+- name: lsadmin reconfig
+  shell: 'echo "y" | lsadmin reconfig'
+  environment:
+    PATH: "{{ ansible_env.PATH }}:{{ openlava_bins_path }}"
+  delegate_to: '{{groups["openlava_master"][0]}}'
+  ignore_errors: true
+
+- name: spacer  # Give OpenLava services enough time to come back properly
+  command: bhosts
+  register: nodes_status
+  until: nodes_status.stdout.find("unavail") == -1 and nodes_status.stdout.find("unreach") == -1
+  retries: 50
+  delay: 5
+  environment:
+    PATH: "{{ ansible_env.PATH }}:{{ openlava_bins_path }}"
+
+- name: badmin mbdrestart
+  command: "badmin mbdrestart"
+  environment:
+    PATH: "{{ ansible_env.PATH }}:{{ openlava_bins_path }}"
+  delegate_to: '{{groups["openlava_master"][0]}}'

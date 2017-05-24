@@ -1,0 +1,11 @@
+---
+# tasks file for fail2ban
+- name: Install fail2ban
+  yum: pkg=fail2ban state=present
+
+- name: Copy fail2ban customization file
+  copy: src=customization.local dest=/etc/fail2ban/jail.d/
+  notify: restart fail2ban
+
+- name: Ensure fail2ban is running and enabled
+  service: name=fail2ban state=started enabled=yes

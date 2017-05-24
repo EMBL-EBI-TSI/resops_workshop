@@ -1,0 +1,7 @@
+---
+# defaults file for unattended-upgrades
+
+type_updates: 'security'
+download_updates: 'yes'
+apply_updates: 'yes'
+update_messages: 'no'

@@ -1,0 +1,20 @@
+---
+- block:
+  - name: OpenStack-NFS | Load volumes mapping from file
+    include_vars: '../ostack_volumes_mapping.json'
+    register: mapping
+    tags: ['live']
+
+  - name: OpenStack-NFS | Set volumes mapping
+    set_fact:
+      volumes_mapping:
+        - { device: "{{ homes_volume }}", mountpoint: "/exports/home"}
+        - { device: "{{ data_volume }}", mountpoint: "/exports/data"}
+    tags: ['live']
+
+  when: "'openlava_nfs' in group_names"
+
+- name: OpenStack | Set internal subnet
+  set_fact:
+    internal_subnet: "{{ openstack_internal_subnet }}"
+  tags: ['live']

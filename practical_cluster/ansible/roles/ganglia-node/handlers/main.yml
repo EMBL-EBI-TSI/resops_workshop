@@ -1,0 +1,4 @@
+---
+# handlers file for ganglia-client
+- name: restart gmond
+  service: name=gmond state=restarted

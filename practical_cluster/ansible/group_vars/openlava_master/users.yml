@@ -1,0 +1,15 @@
+---
+users_create_per_user_group: false
+users_group: users
+
+groups_to_create: ['pipelines']
+
+users:
+  - username: centos
+    name: Deployment user
+    groups: ['wheel', 'pipelines']
+    sudo: true
+    nopasswd: true
+    ssh_key: []
+
+users_deleted: []

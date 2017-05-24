@@ -1,0 +1,10 @@
+---
+## Set timezone on CentOS
+- name: Get current timezone setting
+  shell: timedatectl status | grep Timezone | awk '{print $2}'
+  register: current_timezone
+  changed_when: false
+
+- name: Set timezone
+  command: timedatectl set-timezone '{{ timezone }}'
+  when: current_timezone.stdout != '{{ timezone }}'

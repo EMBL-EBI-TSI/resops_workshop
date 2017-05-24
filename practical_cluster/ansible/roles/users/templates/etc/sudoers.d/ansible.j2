@@ -1,0 +1,7 @@
+###                                     ###
+### This file is controlled by Ansible. ###
+###                                     ###
+{% for user in users %}
+{% if user.sudo is defined and user.sudo and user.nopasswd is defined and user.nopasswd %}{{ user.username }} ALL=(ALL) NOPASSWD:ALL
+{% endif %}
+{% endfor %}
