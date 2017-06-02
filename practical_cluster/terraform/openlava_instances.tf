@@ -19,18 +19,12 @@ resource "openstack_compute_instance_v2" "openlava_master" {
   ]
 
   network {
-    uuid = "${openstack_networking_network_v2.openlava_network.id}"
+    name = "${var.network_name}"
   }
 
   metadata {
     deployment_id = "${var.name}"
   }
-}
-
-resource "openstack_compute_floatingip_associate_v2" "openlava_master_float_attach" {
-  floating_ip = "${openstack_networking_floatingip_v2.openlava_floatip.address}"
-  instance_id = "${openstack_compute_instance_v2.openlava_master.id}"
-  fixed_ip    = "${openstack_compute_instance_v2.openlava_master.network.0.fixed_ip_v4}"
 }
 
 resource "openstack_blockstorage_volume_v2" "homes_volume" {
@@ -43,6 +37,7 @@ resource "openstack_blockstorage_volume_v2" "homes_volume" {
   }
 }
 
+
 resource "openstack_blockstorage_volume_v2" "data_volume" {
   name        = "${var.name}-data"
   description = "Volume storing data for the ${var.name} cluster"
@@ -52,6 +47,7 @@ resource "openstack_blockstorage_volume_v2" "data_volume" {
     deployment_id = "${var.name}"
   }
 }
+
 
 resource "openstack_compute_instance_v2" "openlava_nfs" {
   name = "${var.name}_nfs"
@@ -67,7 +63,7 @@ resource "openstack_compute_instance_v2" "openlava_nfs" {
   ]
 
   network {
-    uuid = "${openstack_networking_network_v2.openlava_network.id}"
+    name = "${var.network_name}"
   }
 
   metadata {
@@ -100,7 +96,7 @@ resource "openstack_compute_instance_v2" "openlava_nodes" {
   ]
 
   network {
-    uuid = "${openstack_networking_network_v2.openlava_network.id}"
+    name = "${var.network_name}"
   }
 
   metadata {
@@ -109,5 +105,5 @@ resource "openstack_compute_instance_v2" "openlava_nodes" {
 }
 
 output "MASTER_IP" {
-  value = "${openstack_networking_floatingip_v2.openlava_floatip.address}"
+  value = "${openstack_compute_instance_v2.openlava_master.access_ip_v4}"
 }

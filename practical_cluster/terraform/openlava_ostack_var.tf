@@ -6,11 +6,18 @@ variable "availability_zone" {
   default = ""
 }
 
-variable "subnet_network_block" {
+variable "network_name" {
   type        = "string"
-  description = "Network block to be used for the openlava subnet"
+  description = "The ID of the network where VM should be connected"
 
-  default = "10.22.100.0/24"
+  default = "base_vms_network"
+}
+
+variable "subnet_network_block" {
+  type = "string"
+  description = "The subnet of the network where the VMs are connected"
+
+  default = "10.100.0.0/16"
 }
 
 variable "floating_pool" {
@@ -20,32 +27,25 @@ variable "floating_pool" {
   default = "ext-net"
 }
 
-variable "external_net_uuid" {
-  type        = "string"
-  description = "The UUID of the external network"
-
-  default = "2d771d9c-f279-498f-8b8a-f5c6d83da6e8"
-}
-
 variable "master_image_id" {
   type        = "string"
   description = "The pre-baked image for the master node"
 
-  default = "9c380406-068c-4eb9-9689-089ac2d49402"
+  default = "7b5fea5e-7a75-46de-a1c4-5e7fae18eb85"
 }
 
 variable "node_image_id" {
   type        = "string"
   description = "The pre-baked image for the compute node"
 
-  default = "f4c6ac78-8960-4bbf-8215-d9329c992dd5"
+  default = "7b5fea5e-7a75-46de-a1c4-5e7fae18eb85"
 }
 
 variable "nfs_image_id" {
   type        = "string"
   description = "The pre-baked image for the NFS server"
 
-  default = "8207bafe-01f9-4cf0-a028-3f4fcc8fa783"
+  default = "7b5fea5e-7a75-46de-a1c4-5e7fae18eb85"
 }
 
 variable "master_flavor" {
