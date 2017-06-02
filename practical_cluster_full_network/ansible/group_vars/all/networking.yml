@@ -1,0 +1,2 @@
+---
+openstack_internal_subnet: "10.22.100.0/24"

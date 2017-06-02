@@ -1,0 +1,19 @@
+---
+# tasks file for ntp
+- name: Remove chrony
+  yum: pkg=chrony state=absent
+
+- name: Install NTP
+  yum: pkg=ntp state=present
+
+- name: Template ntp.conf template file
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf
+  notify: restart ntp
+  tags: ['live']
+
+- name: Ensure ntp service is up and enabled
+  service: name=ntpd state=started enabled=true
+
+- name: Open firewall port on the internal network
+  firewalld: service=ntp zone=internal permanent=true immediate=true state=enabled
+  when: open_firewall_port

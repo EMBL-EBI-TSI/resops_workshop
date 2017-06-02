@@ -1,0 +1,19 @@
+---
+- name: Install basic packages
+  action: yum pkg={{item}} state=present
+  when: is_centos
+  with_items:
+    - epel-release
+    - firewalld
+
+- name: Start and enable services
+  action: service name={{ item }} state=started enabled=yes
+  when: is_centos
+  with_items:
+    - firewalld
+
+  # Enabling firewalld closes all ports until it's fully started
+  # Wait until SSH ports it's open again, so we avoid connection errors
+- name: Wait for SSH port to be opened again
+  pause: seconds=5
+  become: False

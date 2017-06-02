@@ -1,0 +1,26 @@
+#-----------------------------------------------------------------------
+# T H I S   I S   A    O N E   P E R   C L U S T E R    F I L E
+#
+# This is a sample cluster definition file.  There is a cluster
+# definition file for each cluster.  This file's name should be
+# lsf.cluster.<cluster-name>.
+# See lsf.cluster(5) and the "LSF Administrator's Guide".
+
+Begin   ClusterAdmins
+Administrators = openlava
+End    ClusterAdmins
+
+Begin	Host
+HOSTNAME          model          type  server  r1m  RESOURCES
+{{ hostvars[groups["openlava_master"][0]].ansible_hostname }} Intel linux 1 - -
+{% for node in nodes_hostnames %}
+{{ node }} Intel linux 1 - -
+{% endfor %}
+End     Host
+
+Begin ResourceMap
+RESOURCENAME  LOCATION
+# tmp2	        [default]
+# nio	        [all]
+# console	[default]
+End ResourceMap

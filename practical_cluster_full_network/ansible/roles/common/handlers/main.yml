@@ -1,0 +1,12 @@
+---
+- name: restart sshd
+  action: service name=sshd state=restarted
+
+- name: reload exports
+  action: shell exportfs -r
+
+- name: ensure nfs service is running
+  service: name=nfs state=started
+
+- name: restart nfs
+  service: name=nfs state=restarted

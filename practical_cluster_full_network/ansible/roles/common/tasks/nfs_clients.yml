@@ -1,0 +1,17 @@
+---
+- name: install nfs client
+  yum: pkg=nfs-utils state=present
+
+- name: ensure {{nfsmount}} directory exists
+  file: path={{nfsmount}} state=directory
+  tags: ['live']
+
+- name: set NFS options
+  set_fact:
+    nfsoptions: "rw,hard,lock,tcp,bg,timeo=600,nfsvers=4"
+  when: nfsoptions is not defined
+  tags: ['live']
+
+- name: Mount {{nfsmount}} via NFS on clients
+  mount: name={{nfsmount}} src={{nfsserver}}:{{nfspath}} fstype=nfs4 opts={{nfsoptions}} state=mounted
+  tags: ['live']

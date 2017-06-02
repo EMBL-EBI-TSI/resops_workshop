@@ -1,0 +1,15 @@
+galaxy_info:
+  author: Dario Vianello
+  description: An Ansible role deploy an OpenLava cluster
+  company: EMBL-EBI
+  license: CC-BY-SA 4.0
+  min_ansible_version: 2.1
+  platforms:
+  - name: EL
+    versions:
+    - 7
+  galaxy_tags:
+    - cloud
+    - openlava
+    - batch_systems
+dependencies: []

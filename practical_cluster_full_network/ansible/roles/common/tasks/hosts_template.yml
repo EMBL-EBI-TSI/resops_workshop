@@ -1,0 +1,28 @@
+---
+- name: Get random string to avoid file collision
+  set_fact:
+    random_bit: "{{ 10000 | random(1)}}"
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['live']
+
+- name: Template hosts file locally
+  template: src=roles/common/templates/hosts.j2 dest={{playbook_dir}}/roles/common/files/templated_hosts_{{random_bit}}
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['live']
+
+- name: Copy /etc/hosts
+  copy: src=roles/common/files/templated_hosts_{{random_bit}} dest=/etc/hosts
+  tags: ['live']
+
+- name: Delete temp file
+  file: path={{playbook_dir}}/roles/common/files/templated_hosts_{{random_bit}} state=absent
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['live']

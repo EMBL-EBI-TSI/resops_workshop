@@ -1,0 +1,134 @@
+---
+# tasks file for openlava
+- name: Install environment packages
+  yum: name="{{ item }}" state=present
+  with_items: "{{ environment_packages }}"
+
+- name: Install packages required by OpenLava
+  yum: name="{{ item }}" state=present
+  with_items:
+    - psmisc  # provides killall
+
+- name: Copy OpenLava executable to host
+  copy: src="{{openlava_rpms[openlava_version]}}" dest="~/"
+  register: openlava_rpm_copy
+
+- name: Install OpenLava
+  yum: name="{{openlava_rpm_copy.dest}}" state=present
+
+- name: Extract openlava nodes hostnames from hostvars
+  set_fact:
+    hostname: "{{hostvars[item].ansible_hostname}}"
+  with_items: "{{groups.openlava_nodes|default([])}}"
+  register: nodes_fqdn_hostvars
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['openlava_conf', 'live']
+
+- name: Extract openlava nodes hostnames and sort them
+  set_fact:
+    nodes_hostnames: "{{ nodes_fqdn_hostvars.results | map(attribute='ansible_facts.hostname') | list | sort }}"
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['openlava_conf', 'live']
+
+- name: Get a timestamp
+  shell: date "+%s"
+  register: timestamp
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['openlava_conf', 'live']
+
+- name: Template lsf.conf locally
+  template: src=opt/openlava/etc/lsf.conf.j2 dest="{{role_path}}/files/lsf.conf.{{ timestamp.stdout }}"
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['openlava_conf', 'live']
+
+- name: Template lsf.clusters.openlava
+  template: src=opt/openlava/etc/lsf.cluster.openlava.j2 dest="{{role_path}}/files/lsf.cluster.openlava.{{ timestamp.stdout }}"
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: false
+  tags: ['openlava_conf', 'live']
+
+- name: Copy lsf.conf to hosts
+  copy: src="{{role_path}}/files/lsf.conf.{{ timestamp.stdout }}" dest=/opt/{{ openlava_version }}/etc/lsf.conf
+  notify:
+    - reload openlava
+
+  tags: ['openlava_conf', 'live']
+
+- name: Copy lsf.cluster.openlava to hosts
+  copy: src="{{role_path}}/files/lsf.cluster.openlava.{{ timestamp.stdout }}" dest=/opt/{{ openlava_version }}/etc/lsf.cluster.openlava
+  notify:
+    - reload openlava
+
+  tags: ['openlava_conf', 'live']
+
+- name: Copy lsf.shared
+  copy: src=lsf.shared dest=/opt/{{ openlava_version }}/etc/lsf.shared
+  notify:
+    - reload openlava
+
+  tags: ['openlava_conf', 'live']
+
+- name: Copy lsb.queues
+  copy: src=lsb.queues dest=/opt/{{ openlava_version }}/etc/lsb.queues
+  notify:
+    - reload openlava
+
+  tags: ['openlava_conf', 'live']
+
+- name: Delete local templates
+  file: path="{{ role_path }}/files/{{ item }}" state=absent
+  with_items:
+    - lsf.conf.{{ timestamp.stdout }}
+    - lsf.cluster.openlava.{{ timestamp.stdout }}
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+  become: no
+  tags: ['openlava_conf', 'live']
+
+# Check if openlava is already running
+- name: Check if openlava is alredy running
+  shell: ps -ef |  grep sbatchd | grep -v grep
+  register: check_openlava
+  changed_when: false
+  failed_when: false
+
+# This stops openlava in case --skip-tags live is set, as we're building an image
+# to be used later on and we don't want the LIM to start without being properly configured.
+# In case OpenLava is already running, don't stop it, as we're acting on a live cluster and
+# this would cause distruptions
+- name: Disable openlava service
+  service: name=openlava state=stopped enabled=no
+  when: "check_openlava.rc == 1"
+
+# If --tags live or no tag is specified, openlava is started and enabled again by the following
+# task.
+- name: Start and enable openlava service
+  service: name=openlava state=started enabled=yes
+  tags: ['live']
+
+- name: Open ports needed by OpenLava
+  firewalld: port="{{ item }}" zone=internal permanent=true state=enabled immediate=true
+  with_items: "{{ openlava_ports }}"
+
+- name: Close node to avoid having jobs running on master
+  command: "badmin hclose"
+  changed_when: false
+  when: "'openlava_master' in group_names"
+  environment:
+    PATH: "{{ ansible_env.PATH }}:{{ openlava_bins_path }}"
+  tags: ['live']

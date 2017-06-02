@@ -1,0 +1,18 @@
+---
+- name: Check if SSH port is marked to be open
+  firewalld: service=ssh permanent=true state=enabled immediate=true
+
+- name: Block root SSH access
+  action: lineinfile dest=/etc/ssh/sshd_config regexp="^PermitRootLogin" line="PermitRootLogin no" state=present
+  notify:
+    - restart sshd
+
+- name: Disable SSH password authentication
+  action: lineinfile dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" state=present
+  notify:
+    - restart sshd
+
+- name: Enable SSH Forward Agent in sshd
+  action: lineinfile dest=/etc/ssh/sshd_config regexp="^AllowAgentForwarding" line="AllowAgentForwarding yes" state=present
+  notify:
+    - restart sshd

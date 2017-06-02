@@ -1,0 +1,310 @@
+---
+- name: Warming up
+  gather_facts: no
+  become: no
+  hosts: openlava_master
+  vars:
+    ansible_ssh_pipelining: yes
+
+  tasks:
+    - name: Wait for the bastion node
+      local_action:
+        module: wait_for host="{{ master_ip }}" search_regex=OpenSSH port=22 delay=5
+      tags: ["live"]
+
+    - name: Waiting until SSH allows login on Master
+      local_action:
+        module: shell ssh -tt -o ConnectTimeout=5 -o ControlMaster=no -o StrictHostKeyChecking=no centos@{{ master_ip }} echo "\$HOME ready"
+      register: ssh_conn
+      changed_when: false
+      failed_when: false
+      until: "'ready' in ssh_conn.stdout"
+      retries: 20
+      delay: 5
+      tags: ["live"]
+
+      # We need to increase the number of SSH connection the master node can handle to allow Ansible to do
+      # its work properly
+    - name: Increase SSH MaxSessions on Master
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^MaxSessions" line="MaxSessions 100" state=present
+      become: yes
+      register: sshd_max_sessions
+      tags: ["live"]
+
+    - name: Increase SSH MaxStartups
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^MaxStartups \d+:\d+:\d+" line="MaxStartups 50:30:100" state=present
+      become: yes
+      register: sshd_max_startups
+      tags: ["live"]
+
+    - name: Restart SSHD
+      action: service name=sshd state=restarted
+      become: yes
+      when: sshd_max_sessions.changed or sshd_max_startups.changed
+      tags: ["live"]
+
+    - name: Start checking if compute nodes are online
+      wait_for: host="{{ item }}" port=22 search_regex=OpenSSH delay=5
+      delegate_to: "{{ inventory_hostname }}"
+      with_items: "{{ groups['openlava_nodes'] }}"
+      register: compute_nodes
+      async: 7200
+      poll: 0
+      tags: ['live']
+
+    - name: Keep polling until all compute nodes are online
+      async_status: jid={{ item.ansible_job_id }}
+      register: compute_nodes_online
+      until: compute_nodes_online.finished
+      retries: 300
+      with_items: "{{ compute_nodes.results }}"
+      no_log: true
+      tags: ['live']
+
+    - name: Wait for the NFS server to come online
+      wait_for: host="{{ item }}" search_regex=OpenSSH port=22 delay=5
+      delegate_to: "{{ inventory_hostname }}"
+      with_items: "{{ groups['openlava_nfs'] }}"
+      retries: 5
+      tags: ['live']
+
+    - name: Allow SSH to settle down
+      pause: seconds=5
+      tags: ["live"]
+
+- name: Cloud-dependent tasks
+  hosts: openlava_master:openlava_nfs:openlava_nodes
+  remote_user: centos
+  become: yes
+  vars:
+    ansible_ssh_pipelining: yes
+
+  tasks:
+    - name: Execute OpenStack-specific tasks
+      include: openstack_tasks.yml
+      when: "'OpenStack' in ansible_product_name"
+
+- name: Common configuration
+  hosts: openlava_master:openlava_nodes:openlava_nfs
+  remote_user: centos
+  become: yes
+  vars:
+    ansible_ssh_pipelining: yes
+  vars_files:
+    - group_vars/openlava_master/users.yml
+
+  pre_tasks:
+    - include: roles/common/tasks/hosts_template.yml
+    - include: roles/common/tasks/packages.yml
+    - include: roles/common/tasks/ssh.yml
+
+  roles:
+    - unattended-upgrades
+    - timezone
+    - { role: users, tags: ['live'] }
+
+  tasks:
+    - name: Extract master ip
+      set_fact:
+        ganglia_server: "{{hostvars[groups['openlava_master'][0]].ansible_default_ipv4.address}}"
+      tags: ['live']
+
+    - name: Add IPs ranges to internal zone in FirewallD
+      firewalld: source="{{ item }}" zone=internal permanent=yes immediate=yes state=enabled
+      with_items:
+        - "{{ internal_subnet }}"
+        - "{{ ganglia_server }}" # Master IP address
+      tags: ['live']
+
+    # Need to reload manually due to bug in module
+    - name: Reload FirewallD
+      command: firewall-cmd --reload
+      changed_when: false
+      tags: ['live']
+
+    # - name: Update everything to latest version
+    #   yum: name=* state=latest
+
+    - name: Install NFS tools
+      yum: name=nfs-utils state=present
+
+  handlers:
+    - include: roles/common/handlers/main.yml
+      static: yes
+
+- name: OpenLava NFS
+  hosts: openlava_nfs
+  remote_user: centos
+  become: yes
+  vars:
+    ansible_ssh_pipelining: yes
+
+  pre_tasks:
+    - name: Format volumes used to store homes and pipelines
+      filesystem: fstype=xfs dev="{{ item.device }}"
+      with_items: "{{ volumes_mapping }}"
+      register: format_volume
+      tags: ['live']
+
+    - name: Mount new volumes
+      mount: name={{ item.mountpoint }} src={{ item.device }} fstype=xfs state=mounted
+      with_items: "{{ volumes_mapping }}"
+      tags: ['live']
+
+    - name: Copy /home content to new volume
+      synchronize: src=/home/ dest=/exports/home
+      when: format_volume.results[0].changed
+      delegate_to: "{{ inventory_hostname }}" #Otherwise rsync uses as source
+      tags: ['live']                          #the control machine
+
+    - name: Make selinux happy with the home mountpoint
+      command: semanage fcontext -a -e /home /exports/home
+      changed_when: false
+      ignore_errors: true
+      tags: ['live']
+
+    - name: Reset selinux context to allow SSH logins
+      command: restorecon -R -v /exports/home
+      changed_when: false
+      tags: ['live']
+
+    - name: Ensure selinux allows for NFS-mounted homes
+      command: setsebool -P use_nfs_home_dirs 1
+      changed_when: false
+      tags: ['live']
+
+    - name: Bind new volume to home
+      mount: name=/home src=/exports/home opts=bind fstype=none state=mounted
+      tags: ['live']
+
+    - include: roles/common/tasks/nfs.yml
+
+    - name: Extract NFS clients addresses objects
+      set_fact:
+        ip: "{{hostvars[item].ansible_default_ipv4.address}}"
+      with_items: "{{groups.openlava_nodes|default([])}} + {{groups.openlava_master}}"
+      register: nfs_clients_res
+      tags: ['live']
+
+    - name: Extract NFS clients IPs
+      set_fact: nfs_clients_ip="{{ nfs_clients_res.results | map(attribute='ansible_facts.ip') | list | join(",") }}"
+      tags: ['live']
+
+    - name: Configure exports
+      nfsexport: path={{ item }} clients="{{ nfs_clients_ip }}" options=rw,no_root_squash,sync
+      with_items:
+        - "/exports/home"
+        - "/exports/data"
+      notify:
+        - ensure nfs service is running
+        - reload exports
+        - restart nfs # solves auth problems on AWS
+      tags: ['live']
+
+  roles:
+    - { role: ntp, ntp_config_servers: ["{{hostvars[groups.openlava_master[0]].ansible_default_ipv4.address}}"] }
+    - ganglia-node
+
+  handlers:
+    - include: roles/common/handlers/main.yml
+      static: yes
+
+- name: Install OpenLava packages & environment
+  hosts: openlava_master:openlava_nodes
+  remote_user: centos
+  become: yes
+  vars:
+      ansible_ssh_pipelining: yes
+
+  roles:
+    - openlava
+
+- name: Configure OpenLava Master
+  hosts: openlava_master
+  remote_user: centos
+  become: yes
+  vars:
+    ansible_ssh_pipelining: yes
+
+  pre_tasks:
+    - name: Install mailx
+      yum: pkg="mailx" state=present
+
+  roles:
+    - { role: ntp, open_firewall_port: true }
+    - fail2ban
+    - ganglia-server
+
+
+  handlers:
+    - include: roles/common/handlers/main.yml
+      static: yes
+
+
+- name: Configure OpenLava nodes
+  hosts: openlava_nodes
+  remote_user: centos
+  become: yes
+
+  roles:
+    - { role: ntp, ntp_config_servers: ["{{hostvars[groups.openlava_master[0]].ansible_default_ipv4.address}}"] }
+    - ganglia-node
+
+- name: NFS mounts
+  hosts: openlava_master:openlava_nodes
+  remote_user: centos
+  become: yes
+  vars:
+    ansible_ssh_pipelining: yes
+
+  pre_tasks:
+    - name: Ensure selinux allows for NFS-mounted homes
+      command: setsebool -P use_nfs_home_dirs 1
+      changed_when: false
+      tags: ['live']
+
+    - name: Mount NFS share
+      include: roles/common/tasks/nfs_clients.yml nfsserver="{{hostvars[groups.openlava_nfs[0]].ansible_default_ipv4.address}}" nfspath={{ item.nfspath }} nfsmount={{ item.nfsmount }}
+      with_items:
+        - { nfspath: "/exports/home", nfsmount: "/home"}
+        - { nfspath: "/exports/data", nfsmount: "/data"}
+
+    - name: Allow users in group pipelines to access and /data
+      file: path={{ item }} owner="root" group="pipelines" mode="2770"
+      with_items:
+        - "/data"
+      tags: ['live']
+
+
+- name: Roll back to default SSH config
+  become: yes
+  hosts: openlava_master
+  vars:
+    ansible_ssh_pipelining: yes
+
+  tasks:
+      # We need to increase the number of SSH connection the master node can handle to allow Ansible to do
+      # its work properly
+    - name: Put SSH MaxSessions on Master back to normal
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^MaxSessions" line="MaxSessions 10" state=present
+      become: yes
+      register: sshd_max_sessions
+      tags: ["live"]
+
+    - name: Lower SSH MaxStartups back to normal
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^MaxStartups \d+:\d+:\d+" line="MaxStartups 10:30:60" state=present
+      become: yes
+      register: sshd_max_startups
+      tags: ["live"]
+
+    - name: Restart SSHD
+      action: service name=sshd state=restarted
+      become: yes
+      when: sshd_max_sessions.changed or sshd_max_startups.changed
+      tags: ["live"]
+
+    - name: Wait for SSH to come back
+      local_action:
+        module: wait_for host={{ master_ip }} search_regex=OpenSSH port=22 delay=5
+      become: no
+      tags: ["live"]
