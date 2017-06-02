@@ -4,8 +4,9 @@ set -e
 # The script assumes that env vars for authentication with OpenStack are present.
 
 ## Customise this ##
-export TF_VAR_name="your_user_id_here"
-export TF_VAR_DEPLOYMENT_KEY_PATH="/path/to/your/key"
+export TF_VAR_name="user_XX" # substitute XX with your progressive user ID
+export TF_VAR_DEPLOYMENT_KEY_PATH="path_to_your_private_key"
+bastion_ip=bastion_ip
 
 # Launch provisioning of the infrastructure
 cd terraform || exit
@@ -24,7 +25,7 @@ ssh-add $TF_VAR_DEPLOYMENT_KEY_PATH &> /dev/null
 
 # Launch Ansible
 cd ansible || exit
-TF_STATE='../terraform/terraform.tfstate' ansible-playbook -i /usr/local/bin/terraform-inventory --extra-vars "master_ip=$master_ip" -u centos deployment.yml --tags live
+TF_STATE='../terraform/terraform.tfstate' ansible-playbook -i /usr/local/bin/terraform-inventory --extra-vars "bastion_ip=$bastion_ip" -u centos deployment.yml
 
 # Kill local ssh-agent
 eval "$(ssh-agent -k)"
