@@ -16,3 +16,7 @@ TSISOMEID*
 *.log
 volumes_mapping.json
 *inventory*
+
+#Various
+test_cluster_deployment.sh
+destroy_test_clusters.sh
