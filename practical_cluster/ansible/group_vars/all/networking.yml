@@ -1,4 +1,2 @@
 ---
-gcp_internal_subnet: "10.20.102.0/24"
-aws_internal_subnet: "10.22.102.0/24"
-openstack_internal_subnet: "10.22.100.0/24"
+openstack_internal_subnet: "10.22.100.0/8"

@@ -2,7 +2,7 @@
 # defaults file for openlava
 
 # Openlava version and rpm package to be used
-openlava_version: "openlava-3.3"
+openlava_version: "openlava-2.2"
 
 # Firewall ports that must be opened to allow openlava comms
 openlava_ports:
@@ -12,11 +12,11 @@ openlava_ports:
 # List basic non-openlava related packages that must be installed in all
 # the nodes here (i.e. java, perl, etc...)
 environment_packages:
-    - haskell-platform
-    - perl
-    - perl-core
-    - java-1.6.0-openjdk
-    - libgfortran
+    # - haskell-platform
+    # - perl
+    # - perl-core
+    # - java-1.6.0-openjdk
+    # - libgfortran
     - bzip2
     - unzip
 
@@ -27,7 +27,6 @@ environment_packages:
 
 # Dict to link openlava version to rpms
 openlava_rpms:
-  "openlava-3.2": "openlava-3.2-0.x86_64.rpm"
-  "openlava-3.3": "openlava-3.3-3.x86_64.rpm"
+  "openlava-2.2": "openlava-2.2-1.x86_64.rpm"
 
 openlava_bins_path: "/opt/{{ openlava_version }}/bin"
