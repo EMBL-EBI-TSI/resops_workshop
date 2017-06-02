@@ -1,1 +1,2 @@
-# ResOps: Delivering Science 
+#ResOps: Delivering Bioinformatics Across Clouds
+##Workshop material
