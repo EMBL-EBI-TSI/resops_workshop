@@ -14,7 +14,7 @@ variable "network_name" {
 }
 
 variable "subnet_network_block" {
-  type = "string"
+  type        = "string"
   description = "The subnet of the network where the VMs are connected"
 
   default = "10.100.0.0/16"

@@ -37,7 +37,6 @@ resource "openstack_blockstorage_volume_v2" "homes_volume" {
   }
 }
 
-
 resource "openstack_blockstorage_volume_v2" "data_volume" {
   name        = "${var.name}-data"
   description = "Volume storing data for the ${var.name} cluster"
@@ -47,7 +46,6 @@ resource "openstack_blockstorage_volume_v2" "data_volume" {
     deployment_id = "${var.name}"
   }
 }
-
 
 resource "openstack_compute_instance_v2" "openlava_nfs" {
   name = "${var.name}_nfs"
