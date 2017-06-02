@@ -20,3 +20,4 @@ volumes_mapping.json
 #Various
 test_cluster_deployment.sh
 destroy_test_clusters.sh
+ostack_volumes_mapping.json
