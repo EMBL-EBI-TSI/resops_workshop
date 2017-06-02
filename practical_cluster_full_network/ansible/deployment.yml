@@ -7,7 +7,7 @@
     ansible_ssh_pipelining: yes
 
   tasks:
-    - name: Wait for the bastion node
+    - name: Wait for the master node
       local_action:
         module: wait_for host="{{ master_ip }}" search_regex=OpenSSH port=22 delay=5
       tags: ["live"]
