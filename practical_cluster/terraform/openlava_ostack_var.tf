@@ -73,14 +73,14 @@ variable "homes_size" {
   type        = "string"
   description = "The size of the volume storing the user homes"
 
-  default = 10
+  default = 2
 }
 
 variable "data_volume_size" {
   type        = "string"
   description = "The size of the volume storing the data"
 
-  default = 10
+  default = 2
 }
 
 variable "nodes" {
