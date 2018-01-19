@@ -31,21 +31,21 @@ variable "master_image_id" {
   type        = "string"
   description = "The pre-baked image for the master node"
 
-  default = "7b5fea5e-7a75-46de-a1c4-5e7fae18eb85"
+  default = "783f08f3-8acc-4cb7-9d06-723046ccf89c"
 }
 
 variable "node_image_id" {
   type        = "string"
   description = "The pre-baked image for the compute node"
 
-  default = "7b5fea5e-7a75-46de-a1c4-5e7fae18eb85"
+  default = "783f08f3-8acc-4cb7-9d06-723046ccf89c"
 }
 
 variable "nfs_image_id" {
   type        = "string"
   description = "The pre-baked image for the NFS server"
 
-  default = "7b5fea5e-7a75-46de-a1c4-5e7fae18eb85"
+  default = "783f08f3-8acc-4cb7-9d06-723046ccf89c"
 }
 
 variable "master_flavor" {
