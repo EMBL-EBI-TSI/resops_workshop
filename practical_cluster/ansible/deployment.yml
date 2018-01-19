@@ -14,7 +14,7 @@
 
     - name: Waiting until SSH allows login on Master
       local_action:
-        module: shell ssh -tt -o ConnectTimeout=5 -o ControlMaster=no -o StrictHostKeyChecking=no centos@{{ groups['openlava_master'][0] }} echo "\$HOME ready"
+        module: shell ssh {{ansible_ssh_common_args}} -tt -o ConnectTimeout=5 -o ControlMaster=no -o StrictHostKeyChecking=no centos@{{ groups['openlava_master'][0] }} echo "\$HOME ready"
       register: ssh_conn
       changed_when: false
       failed_when: false
