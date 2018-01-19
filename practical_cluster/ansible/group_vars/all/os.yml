@@ -1,2 +1,2 @@
-is_centos: "'{{ansible_distribution}}' == 'CentOS'"
-is_amazon: "'amzn' in '{{ansible_distribution}}'"
+is_centos: ansible_distribution == 'CentOS'
+is_amazon: "'amzn' in 'ansible_distribution'"
