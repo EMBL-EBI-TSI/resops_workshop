@@ -12,9 +12,6 @@
         module: wait_for host="{{ bastion_ip }}" search_regex=OpenSSH port=22 delay=5
       tags: ["live"]
 
-    - name: debug
-      debug: msg="{{ bastion_ip }}"
-
     - name: Waiting until SSH allows login on Master
       local_action:
         module: shell ssh -tt -o ConnectTimeout=5 -o ControlMaster=no -o StrictHostKeyChecking=no centos@{{ groups['openlava_master'][0] }} echo "\$HOME ready"
