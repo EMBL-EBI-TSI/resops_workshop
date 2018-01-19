@@ -12,9 +12,9 @@ resource "openstack_networking_subnet_v2" "openlava_subnet" {
 }
 
 resource "openstack_networking_router_v2" "openlava_router" {
-  region           = ""
-  name             = "${var.name}_router"
-  external_gateway = "${var.external_net_uuid}"
+  region              = ""
+  name                = "${var.name}_router"
+  external_network_id = "${var.external_net_uuid}"
 }
 
 resource "openstack_networking_router_interface_v2" "router_interface_1" {
