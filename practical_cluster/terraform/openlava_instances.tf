@@ -13,9 +13,7 @@ resource "openstack_compute_instance_v2" "openlava_master" {
 
   security_groups = ["${openstack_networking_secgroup_v2.openlava_basic_sec.id}",
     "${openstack_networking_secgroup_v2.openlava_cluster.id}",
-    "${openstack_networking_secgroup_v2.openlava_HTTP.id}",
-    "${openstack_networking_secgroup_v2.openlava_ganglia_server.id}",
-    "${openstack_networking_secgroup_v2.openlava_NTP.id}",
+    "${openstack_networking_secgroup_v2.openlava_master_ports.id}"
   ]
 
   network {

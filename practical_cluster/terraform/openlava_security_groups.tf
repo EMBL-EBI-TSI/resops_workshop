@@ -63,9 +63,9 @@ resource "openstack_networking_secgroup_rule_v2" "openlava_NFSv4" {
   security_group_id = "${openstack_networking_secgroup_v2.openlava_NFSv4.id}"
 }
 
-resource "openstack_networking_secgroup_v2" "openlava_HTTP" {
+resource "openstack_networking_secgroup_v2" "openlava_master_ports" {
   name                 = "${var.name}_HTTP"
-  description          = "Allows HTTP from outside to access Ganglia"
+  description          = "Allows access to Ganglia Web, Ganglia Server and NTP"
   delete_default_rules = true
 }
 
@@ -76,13 +76,7 @@ resource "openstack_networking_secgroup_rule_v2" "ganglia_http" {
   port_range_min    = 80
   port_range_max    = 80
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.openlava_HTTP.id}"
-}
-
-resource "openstack_networking_secgroup_v2" "openlava_ganglia_server" {
-  name                 = "${var.name}_ganglia_server"
-  description          = "Allows traffic to the Ganglia Server"
-  delete_default_rules = true
+  security_group_id = "${openstack_networking_secgroup_v2.openlava_master_ports.id}"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "ganglia_server_tcp" {
@@ -92,7 +86,7 @@ resource "openstack_networking_secgroup_rule_v2" "ganglia_server_tcp" {
   port_range_min    = 8649
   port_range_max    = 8649
   remote_ip_prefix  = "${var.subnet_network_block}"
-  security_group_id = "${openstack_networking_secgroup_v2.openlava_ganglia_server.id}"
+  security_group_id = "${openstack_networking_secgroup_v2.openlava_master_ports.id}"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "ganglia_server_udp" {
@@ -102,7 +96,17 @@ resource "openstack_networking_secgroup_rule_v2" "ganglia_server_udp" {
   port_range_min    = 8649
   port_range_max    = 8649
   remote_ip_prefix  = "${var.subnet_network_block}"
-  security_group_id = "${openstack_networking_secgroup_v2.openlava_ganglia_server.id}"
+  security_group_id = "${openstack_networking_secgroup_v2.openlava_master_ports.id}"
+}
+
+resource "openstack_networking_secgroup_rule_v2" "ntp" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = 123
+  port_range_max    = 123
+  remote_ip_prefix  = "${var.subnet_network_block}"
+  security_group_id = "${openstack_networking_secgroup_v2.openlava_master_ports.id}"
 }
 
 resource "openstack_networking_secgroup_v2" "openlava_ganglia_client" {
@@ -119,20 +123,4 @@ resource "openstack_networking_secgroup_rule_v2" "ganglia_client" {
   port_range_max    = 8649
   remote_ip_prefix  = "${var.subnet_network_block}"
   security_group_id = "${openstack_networking_secgroup_v2.openlava_ganglia_client.id}"
-}
-
-resource "openstack_networking_secgroup_v2" "openlava_NTP" {
-  name                 = "${var.name}_NTP"
-  description          = "Allows NTP traffic"
-  delete_default_rules = true
-}
-
-resource "openstack_networking_secgroup_rule_v2" "ntp" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "udp"
-  port_range_min    = 123
-  port_range_max    = 123
-  remote_ip_prefix  = "${var.subnet_network_block}"
-  security_group_id = "${openstack_networking_secgroup_v2.openlava_NTP.id}"
 }
