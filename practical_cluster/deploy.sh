@@ -14,6 +14,7 @@ export TF_VAR_name="user_XX" # substitute XX with your progressive user ID
 ## As part of the deployment process, Terraform will upload you private key
 ## to OpenStack and inject it into the VMs to allow you (and Ansible) to access
 ## them. We'll cover how this works in a second.
+## WARNING: do not use "~" in the path here, but use the *absolute* path to the key.
 export TF_VAR_DEPLOYMENT_KEY_PATH="path_to_your_private_key"
 
 ## To reduce our footprint in terms of required public ips, this deployment
